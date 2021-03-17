@@ -7,5 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lazy_static = "1.4.0"
-rand = { version = "0.8.0", default = false, features = ["std", "std_rng"] }
+regex = "1"
+rand = { version = "0.8.0", features = ["std", "std_rng"] }
+poetry-data = { path = "../poetry-data", version = "0.1.0", optional = true }
+
+[features]
+default = [ "poetry-data" ]
