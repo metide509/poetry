@@ -1,11 +1,8 @@
-#[cfg(feature = "default")]
-use poetry_data::POETRY;
+use data::POETRY;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use std::{
-    fmt::{Display, Formatter, Result},
-    ops::Add,
-};
+
+mod data;
 
 /// 诗歌
 /// 包含了以下几个部分
@@ -33,24 +30,23 @@ use std::{
 /// 相顾无言，惟有泪千行。
 /// 料得年年肠断处，明月夜，短松冈。
 /// ```
-#[derive(Debug)]
-pub struct Poetry {
+pub struct Poetry<'a> {
     /// 标题
-    title: &'static str,
+    title: &'a str,
 
     /// 作者
-    author: &'static str,
+    author: &'a str,
 
     /// 朝代
-    dynasty: &'static str,
+    dynasty: &'a str,
 
     /// 诗句
-    sentences: Vec<&'static str>,
+    sentences: Vec<&'a str>,
 }
 
-impl Poetry {
+impl<'a> Poetry<'a> {
     pub fn random() -> Self {
-        let lines: Vec<&str> = get_lines(Self::source());
+        let lines = lines(POETRY);
 
         let mut rng = thread_rng();
         let n = rng.gen_range(0..lines.len());
@@ -71,42 +67,28 @@ impl Poetry {
         content += reg(author, true).as_str();
         content += reg(sentence, false).as_str();
 
-        // let mut content = reg(content, title, true);
-        // reg(content, dynastry, true);
-        // reg(content, author, true);
-        // reg(content, sentence, false);
-
-        // if let Some(title) = title {
-        //     content += title;
-        //     content += ".*"
-        // }
-        // content += r"?\|.*";
-
-        // if let Some(dynastry) = dynastry {
-        //     content += dynastry;
-        //     content += ".*"
-        // }
-        // content += r"?\|.*";
-
-        // if let Some(author) = author {
-        //     content += author;
-        //     content += ".*"
-        // }
-        // content += r"?\|.*";
-
-        // if let Some(sentence) = sentence {
-        //     content += sentence;
-        //     content += ".*"
-        // };
-
-        println!("{}", content);
-
         let re = Regex::new(&content).unwrap();
         Some(
-            re.captures_iter(Self::source())
+            re.captures_iter(POETRY)
                 .map(|caps| Self::from(caps.get(0).unwrap().as_str()))
                 .collect(),
         )
+    }
+
+    pub fn get_title(&self) -> &str {
+        self.title
+    }
+
+    pub fn get_author(&self) -> &str {
+        self.author
+    }
+
+    pub fn get_dynasty(&self) -> &str {
+        self.dynasty
+    }
+
+    pub fn get_sentences(&self) -> Vec<&str> {
+        self.sentences.to_vec()
     }
 }
 
@@ -119,35 +101,14 @@ fn reg(v: Option<&str>, add_lasy: bool) -> String {
     }
 }
 
-#[cfg(not(feature = "default"))]
-impl Source for Poetry {
-    fn source() -> &'static str {
-        "秋浦歌·炉火照天地|唐|李白|炉火照天地，红星乱紫烟。|赧郎明月夜，歌曲动寒川。"
-    }
-}
-
-#[cfg(feature = "default")]
-impl Source for Poetry {
-    fn source() -> &'static str {
-        POETRY
-    }
-}
-
-fn get_lines(str: &str) -> Vec<&str> {
+fn lines(str: &str) -> Vec<&str> {
     str.split_terminator('\n')
-        .map(|line: &str| -> &str {
-            let l = line.len();
-            if l > 0 && line.as_bytes()[l - 1] == b'\r' {
-                &line[0..l - 1]
-            } else {
-                line
-            }
-        })
+        .map(|l| l.trim_end_matches("\r"))
         .collect()
 }
 
-impl From<&'static str> for Poetry {
-    fn from(line: &'static str) -> Self {
+impl<'a> From<&'a str> for Poetry<'a> {
+    fn from(line: &'a str) -> Self {
         let poetry: Vec<&str> = line.split('|').collect();
         let sentences: Vec<&str> = poetry[3..].to_vec();
 
@@ -158,21 +119,4 @@ impl From<&'static str> for Poetry {
             sentences: sentences,
         }
     }
-}
-
-impl Display for Poetry {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        let _ = writeln!(f, "{}", self.title);
-        let _ = writeln!(f, "{}.{}", self.dynasty, self.author);
-
-        for sentence in self.sentences.iter() {
-            let _ = writeln!(f, "{}", sentence);
-        }
-
-        Ok(())
-    }
-}
-
-trait Source {
-    fn source() -> &'static str;
 }

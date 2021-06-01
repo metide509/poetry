@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate clap;
 
-use core::num;
-
 use clap::{App, AppSettings, Arg};
 use poetry::Poetry;
 
@@ -75,11 +73,7 @@ fn make_app<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .help("数量"),
         )
-        .arg(
-            Arg::with_name("RANDOM")
-                .long("random")
-                .help("随机"),
-        );
+        .arg(Arg::with_name("RANDOM").long("random").help("随机"));
 
     app
 }
@@ -93,21 +87,33 @@ fn execute_command(app: App) {
     let sentence = matches.value_of("SENTENCE");
     let number = matches
         .value_of("NUMBER")
-        .unwrap_or("1")
-        .parse::<i32>()
+        .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(1);
 
     let is_random = matches.is_present("RANDOM");
 
     if is_random {
-        for i in 0..number {
-            let p = Poetry::random();
-            println!("{}", p);
+        for _i in 0..number {
+            print_poetry(Poetry::random());
         }
     } else {
-        let poetry = Poetry::find(title, dynasty, author, sentence);
-        for poetry in poetry.unwrap() {
-            println!("{}", poetry);
+        let poetrys = Poetry::find(title, dynasty, author, sentence).unwrap();
+        for p in poetrys {
+            print_poetry(p);
         }
     }
+}
+
+fn print_poetry(p: Poetry) {
+    let mut out = format!(
+        "{}\r\n{}.{}",
+        p.get_title(),
+        p.get_dynasty(),
+        p.get_author()
+    );
+    for sentence in p.get_sentences().iter() {
+        out += format!("\r\n{}", sentence).as_str();
+    }
+
+    println!("{}\r\n", out)
 }
